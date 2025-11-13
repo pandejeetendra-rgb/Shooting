@@ -1,86 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cyber Security Shooter</title>
+<title>Cyber Security Shooter – Advanced</title>
+
 <style>
-    body {
-        margin: 0;
-        background: #111;
-        color: white;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        overflow: hidden;
-    }
+body {
+    margin: 0;
+    background: #0d0d0d;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    color: #fff;
+    text-align: center;
+}
 
-    #gameArea {
-        position: relative;
-        width: 100vw;
-        height: 90vh;
-        border: 2px solid #333;
-        margin: auto;
-        overflow: hidden;
-        background: #000;
-    }
+header {
+    padding: 12px;
+    background: #121212;
+    font-size: 22px;
+    letter-spacing: 1px;
+    font-weight: bold;
+    border-bottom: 2px solid #222;
+}
 
-    .item {
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        user-select: none;
-        cursor: pointer;
-    }
+#scorePanel {
+    padding: 10px;
+    font-size: 18px;
+}
 
-    #scoreBoard {
-        font-size: 22px;
-        padding: 10px;
-    }
+#gameArea {
+    position: relative;
+    width: 100vw;
+    height: 75vh;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #1a1a1a, #0c0c0c);
+    border: 2px solid #222;
+}
 
-    #startBtn {
-        padding: 12px 25px;
-        font-size: 18px;
-        background: #28a;
-        border: none;
-        color: white;
-        border-radius: 6px;
-        cursor: pointer;
-    }
+.item {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    font-size: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    user-select: none;
+    transition: transform 0.1s;
+}
+
+.item.threat {
+    background: #330000;
+    border: 2px solid #ff3b3b;
+    box-shadow: 0 0 10px #ff3b3b;
+}
+
+.item.safe {
+    background: #013300;
+    border: 2px solid #00ff72;
+    box-shadow: 0 0 10px #00ff72;
+}
+
+.flash-green { background: #0a0 !important; }
+.flash-red { background: #a00 !important; }
+
+button {
+    padding: 12px 20px;
+    font-size: 18px;
+    background: #2b6aff;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+#quizBox {
+    width: 90%;
+    max-width: 500px;
+    margin: 20px auto;
+    background: #181818;
+    padding: 20px;
+    border-radius: 10px;
+    display: none;
+    border: 2px solid #2b6aff;
+}
+
+.quiz-question {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.quiz-option {
+    margin: 5px;
+    padding: 10px;
+    background: #222;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.quiz-option:hover {
+    background: #333;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Cyber Security Shooter Game</h2>
-<div id="scoreBoard">Score: 0 | Time: 30</div>
+<header>Cyber Security Shooter</header>
+
+<div id="scorePanel">Score: 0 | Time: 30</div>
 <button id="startBtn">Start Game</button>
 
 <div id="gameArea"></div>
 
+<div id="quizBox"></div>
+
 <script>
 let score = 0;
 let timeLeft = 30;
-let gameInterval;
-let timerInterval;
+let threatsMissed = [];
+let threatsWrong = [];
 let gameRunning = false;
+let gameInterval, timerInterval;
 
-const threats = ["🦠","💀","🐞","⚠️"]; 
-const safeItems = ["🔒","🛡️","🔑","✔️"]; 
+// Cyber icons (simple, light, no heavy graphics)
+const threatIcons = [
+    {icon:"🦠", label:"Malware"},
+    {icon:"💀", label:"Ransomware"},
+    {icon:"🐞", label:"Virus"},
+    {icon:"⚠️", label:"Phishing Link"}
+];
+
+const safeIcons = [
+    {icon:"🔒", label:"Encryption"},
+    {icon:"🛡️", label:"Firewall"},
+    {icon:"🔑", label:"Strong Password"},
+    {icon:"✔️", label:"MFA Enabled"}
+];
 
 document.getElementById("startBtn").onclick = startGame;
 
 function startGame() {
     if (gameRunning) return;
-    gameRunning = true;
+
     score = 0;
     timeLeft = 30;
-    updateBoard();
+    threatsMissed = [];
+    threatsWrong = [];
 
-    gameInterval = setInterval(spawnItem, 800);
+    gameRunning = true;
+    document.getElementById("quizBox").style.display = "none";
+    updatePanel();
+
+    gameInterval = setInterval(spawnItem, 900);
     timerInterval = setInterval(updateTimer, 1000);
 }
 
-function updateBoard() {
-    document.getElementById("scoreBoard").innerHTML = 
+function updatePanel() {
+    document.getElementById("scorePanel").innerHTML = 
         `Score: ${score} | Time: ${timeLeft}`;
 }
 
@@ -90,47 +168,58 @@ function updateTimer() {
         return;
     }
     timeLeft--;
-    updateBoard();
+    updatePanel();
 }
 
 function spawnItem() {
     const gameArea = document.getElementById("gameArea");
     const item = document.createElement("div");
 
-    const isThreat = Math.random() < 0.65; 
-    item.classList.add("item");
-    item.innerHTML = isThreat 
-        ? threats[Math.floor(Math.random() * threats.length)]
-        : safeItems[Math.floor(Math.random() * safeItems.length)];
+    const isThreat = Math.random() < 0.65;
+    let data = isThreat ? threatIcons[Math.floor(Math.random()*threatIcons.length)]
+                        : safeIcons[Math.floor(Math.random()*safeIcons.length)];
 
+    item.classList.add("item", isThreat ? "threat" : "safe");
+    item.innerHTML = data.icon;
     item.dataset.type = isThreat ? "threat" : "safe";
+    item.dataset.label = data.label;
 
+    // Random position
     item.style.left = Math.random() * (window.innerWidth - 80) + "px";
     item.style.top = "-80px";
 
-    item.onclick = () => handleClick(item);
+    item.onclick = () => handleHit(item);
 
     gameArea.appendChild(item);
 
+    // Falling effect
     let fall = setInterval(() => {
         item.style.top = (item.offsetTop + 5) + "px";
+
         if (item.offsetTop > window.innerHeight) {
-            if (item.dataset.type === "threat") score -= 2;
+            if (item.dataset.type === "threat") {
+                score -= 2;
+                threatsMissed.push(item.dataset.label);
+            }
             item.remove();
-            updateBoard();
+            updatePanel();
             clearInterval(fall);
         }
     }, 30);
 }
 
-function handleClick(item) {
+function handleHit(item) {
     if (item.dataset.type === "threat") {
         score += 10;
+        item.classList.add("flash-green");
     } else {
         score -= 5;
+        threatsWrong.push(item.dataset.label);
+        item.classList.add("flash-red");
     }
-    item.remove();
-    updateBoard();
+
+    setTimeout(() => item.remove(), 100);
+    updatePanel();
 }
 
 function endGame() {
@@ -140,19 +229,45 @@ function endGame() {
 
     alert("Game Over! Final Score: " + score);
 
-    // OPTIONAL: send score to Google Sheet
-    // sendScore(score);
+    generateQuiz();
 }
 
-/* Optional Google Apps Script Integration
-function sendScore(score) {
-    fetch("YOUR_WEB_APP_URL_HERE", {
-        method: "POST",
-        body: JSON.stringify({score: score}),
-        headers: {"Content-Type": "application/json"}
+function generateQuiz() {
+    const quizBox = document.getElementById("quizBox");
+    quizBox.innerHTML = "";
+    quizBox.style.display = "block";
+
+    let questions = [];
+
+    // Generate questions from mistakes
+    let mistakes = [...threatsMissed, ...threatsWrong];
+
+    if (mistakes.length === 0) mistakes = ["Malware", "Phishing"];
+
+    mistakes.slice(0, 3).forEach(m => {
+        questions.push({
+            q: `What is ${m}?`,
+            a1: `${m} is a type of cyber threat.`,
+            a2: `${m} is a safe security feature.`,
+            correct: 1
+        });
     });
+
+    quizBox.innerHTML += `<h2>Quick Review Quiz</h2>`;
+
+    questions.forEach((q, i) => {
+        let block = `<div class="quiz-question">
+            <b>${i+1}. ${q.q}</b>
+            <div class="quiz-option" onclick="alert('Correct!')">${q.a1}</div>
+            <div class="quiz-option" onclick="alert('Incorrect!')">${q.a2}</div>
+        </div>`;
+
+        quizBox.innerHTML += block;
+    });
+
+    quizBox.innerHTML += `<p>Well done! You can restart the game anytime.</p>`;
 }
-*/
+
 </script>
 </body>
 </html>
