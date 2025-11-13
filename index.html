@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Security Shooter</title>
+<style>
+    body {
+        margin: 0;
+        background: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        overflow: hidden;
+    }
+
+    #gameArea {
+        position: relative;
+        width: 100vw;
+        height: 90vh;
+        border: 2px solid #333;
+        margin: auto;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .item {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        user-select: none;
+        cursor: pointer;
+    }
+
+    #scoreBoard {
+        font-size: 22px;
+        padding: 10px;
+    }
+
+    #startBtn {
+        padding: 12px 25px;
+        font-size: 18px;
+        background: #28a;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<h2>Cyber Security Shooter Game</h2>
+<div id="scoreBoard">Score: 0 | Time: 30</div>
+<button id="startBtn">Start Game</button>
+
+<div id="gameArea"></div>
+
+<script>
+let score = 0;
+let timeLeft = 30;
+let gameInterval;
+let timerInterval;
+let gameRunning = false;
+
+const threats = ["🦠","💀","🐞","⚠️"]; 
+const safeItems = ["🔒","🛡️","🔑","✔️"]; 
+
+document.getElementById("startBtn").onclick = startGame;
+
+function startGame() {
+    if (gameRunning) return;
+    gameRunning = true;
+    score = 0;
+    timeLeft = 30;
+    updateBoard();
+
+    gameInterval = setInterval(spawnItem, 800);
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateBoard() {
+    document.getElementById("scoreBoard").innerHTML = 
+        `Score: ${score} | Time: ${timeLeft}`;
+}
+
+function updateTimer() {
+    if (timeLeft <= 0) {
+        endGame();
+        return;
+    }
+    timeLeft--;
+    updateBoard();
+}
+
+function spawnItem() {
+    const gameArea = document.getElementById("gameArea");
+    const item = document.createElement("div");
+
+    const isThreat = Math.random() < 0.65; 
+    item.classList.add("item");
+    item.innerHTML = isThreat 
+        ? threats[Math.floor(Math.random() * threats.length)]
+        : safeItems[Math.floor(Math.random() * safeItems.length)];
+
+    item.dataset.type = isThreat ? "threat" : "safe";
+
+    item.style.left = Math.random() * (window.innerWidth - 80) + "px";
+    item.style.top = "-80px";
+
+    item.onclick = () => handleClick(item);
+
+    gameArea.appendChild(item);
+
+    let fall = setInterval(() => {
+        item.style.top = (item.offsetTop + 5) + "px";
+        if (item.offsetTop > window.innerHeight) {
+            if (item.dataset.type === "threat") score -= 2;
+            item.remove();
+            updateBoard();
+            clearInterval(fall);
+        }
+    }, 30);
+}
+
+function handleClick(item) {
+    if (item.dataset.type === "threat") {
+        score += 10;
+    } else {
+        score -= 5;
+    }
+    item.remove();
+    updateBoard();
+}
+
+function endGame() {
+    clearInterval(gameInterval);
+    clearInterval(timerInterval);
+    gameRunning = false;
+
+    alert("Game Over! Final Score: " + score);
+
+    // OPTIONAL: send score to Google Sheet
+    // sendScore(score);
+}
+
+/* Optional Google Apps Script Integration
+function sendScore(score) {
+    fetch("YOUR_WEB_APP_URL_HERE", {
+        method: "POST",
+        body: JSON.stringify({score: score}),
+        headers: {"Content-Type": "application/json"}
+    });
+}
+*/
+</script>
+</body>
+</html>
